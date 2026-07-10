@@ -1,60 +1,254 @@
-# This is my package laravel-metrics
+# Laravel Metrics — an API-first analytics engine
 
-[![Latest Version on Packagist](https://img.shields.io/packagist/v/syriable/laravel-metrics.svg?style=flat-square)](https://packagist.org/packages/syriable/laravel-metrics)
-[![GitHub Tests Action Status](https://img.shields.io/github/actions/workflow/status/syriable/laravel-metrics/run-tests.yml?branch=main&label=tests&style=flat-square)](https://github.com/syriable/laravel-metrics/actions?query=workflow%3Arun-tests+branch%3Amain)
-[![GitHub Code Style Action Status](https://img.shields.io/github/actions/workflow/status/syriable/laravel-metrics/fix-php-code-style-issues.yml?branch=main&label=code%20style&style=flat-square)](https://github.com/syriable/laravel-metrics/actions?query=workflow%3A"Fix+PHP+code+style+issues"+branch%3Amain)
-[![Total Downloads](https://img.shields.io/packagist/dt/syriable/laravel-metrics.svg?style=flat-square)](https://packagist.org/packages/syriable/laravel-metrics)
+A standalone, backend-only metrics engine for Laravel. It computes **values,
+trends, partitions, comparisons, multi-dataset metrics and formulas** — all
+aggregated database-side — and returns normalized, serializer-friendly
+structures ready for any consumer: REST, GraphQL, Nova, Filament, Vue, React,
+Flutter, CLI.
 
-This is where your description should go. Limit it to a paragraph or two. Consider adding a small example.
+No charts. No Blade. No Livewire. No widgets. Just an engine.
 
-## Support us
+> **Origin.** This package is the product of a full reverse engineering of
+> Laravel Nova's Metrics subsystem (the analysis lives in the companion
+> repository under `docs/metrics-analysis/`). Nova's query *strategies* were
+> kept — DB-side aggregation, driver-specific date bucketing, zero-filled
+> series, elapsed-portion comparisons — while its object *architecture*
+> (metrics as UI cards, request-coupled execution, closed vocabularies) was
+> deliberately inverted. See [docs/architecture.md](docs/architecture.md) and
+> the [ADRs](docs/decisions) for every decision and the alternatives
+> considered.
 
-[<img src="https://github-ads.s3.eu-central-1.amazonaws.com/laravel-metrics.jpg?t=1" width="419px" />](https://spatie.be/github-ad-click/laravel-metrics)
+## Requirements
 
-We invest a lot of resources into creating [best in class open source packages](https://spatie.be/open-source). You can support us by [buying one of our paid products](https://spatie.be/open-source/support-us).
-
-We highly appreciate you sending us a postcard from your hometown, mentioning which of our package(s) you are using. You'll find our address on [our contact page](https://spatie.be/about-us). We publish all received postcards on [our virtual postcard wall](https://spatie.be/open-source/postcards).
+- PHP 8.4+
+- Laravel 11 / 12
+- MySQL, MariaDB, PostgreSQL, SQLite or SQL Server
 
 ## Installation
 
-You can install the package via composer:
-
 ```bash
 composer require syriable/laravel-metrics
+php artisan vendor:publish --tag="laravel-metrics-config"   # optional
 ```
 
-You can publish and run the migrations with:
-
-```bash
-php artisan vendor:publish --tag="laravel-metrics-migrations"
-php artisan migrate
-```
-
-You can publish the config file with:
-
-```bash
-php artisan vendor:publish --tag="laravel-metrics-config"
-```
-
-This is the contents of the published config file:
+## Quick start
 
 ```php
-return [
-];
+use Syriable\Metrics\Facades\Metrics;
+
+// One number, compared against the previous 30 days — in a single query.
+$result = Metrics::query(Order::class)
+    ->sum('total')
+    ->range('30d')
+    ->compareWithPrevious()
+    ->value();
+
+$result->value();                    // 48250.75
+$result->comparison()->percentage;   // 12.4
+$result->comparison()->direction;    // Direction::Up
+$result->toArray();                  // normalized API payload
 ```
-
-Optionally, you can publish the views using
-
-```bash
-php artisan vendor:publish --tag="laravel-metrics-views"
-```
-
-## Usage
 
 ```php
-$metrics = new Syriable\Metrics();
-echo $metrics->echoPhrase('Hello, Syriable!');
+// A gap-filled daily series.
+$trend = Metrics::query(Order::class)
+    ->count()
+    ->range('mtd')
+    ->perDay()
+    ->trend();
+
+// A group-by breakdown with engine-computed percentages.
+$partition = Metrics::query(Order::class)
+    ->count()
+    ->groupBy('status')
+    ->top(5)              // fold the tail into "others"
+    ->partition();
 ```
+
+## Concepts
+
+| Concept | What it is |
+|---|---|
+| **Value** | one number per dataset, optionally compared against a reference period |
+| **Trend** | a time series per dataset, gap-filled, bucketed by minute→year |
+| **Partition** | one number per group per dataset (`groupBy`) |
+| **Dataset** | one aggregation inside a metric; a metric can hold many |
+| **Formula** | a computed dataset evaluated over the others, server-side |
+| **Range** | a named resolver ("mtd", "30d") producing an immutable `Period` |
+| **Comparison** | a strategy picking the reference window + uniform math (Δ, %, direction) |
+
+## Ranges
+
+Built-in keys: `today`, `yesterday`, `wtd`, `last_week`, `mtd`, `last_month`,
+`qtd`, `last_quarter`, `ytd`, `last_year`, `all` — plus rolling patterns that
+need no registration: `90m`, `24h`, `30d`, `4w`, `12mo`, `2q`, `5y`.
+
+```php
+->range('qtd')                                    // named
+->range('12mo')                                   // rolling
+->between('2026-01-01', '2026-06-30')             // explicit period
+->allTime()                                       // unbounded
+```
+
+Calendar-aligned ranges compare like-for-like: `mtd` on July 10 compares
+July 1–10 against **June 1–10**, not against the 10 days ending June 30.
+
+## Trends
+
+```php
+Metrics::query(Order::class)
+    ->average('total')
+    ->range('ytd')
+    ->per(Interval::Week)      // Minute | Hour | Day | Week | Month | Quarter | Year
+    ->timezone('Asia/Kolkata') // minute-precision bucket shifting
+    ->trend();
+```
+
+Every point carries a canonical machine key (`2026-W28`, `2026-07-10`,
+`2026-Q3`), a human label, the bucket start, and the value. Missing buckets
+are zero-filled with the aggregate's empty value (0 for count/sum, null for
+avg/min/max). Series joining happens on machine keys — labels are pure
+presentation.
+
+## Comparisons
+
+```php
+->compareWithPrevious()          // immediately preceding period
+->compareWithPreviousWeek()      // same window, shifted back
+->compareWithPreviousMonth()     //   (no month-overflow surprises)
+->compareWithPreviousQuarter()
+->compareWithPreviousYear()
+->compareWith($customStrategy)   // your own ComparisonStrategy
+```
+
+The engine computes `previous`, `difference`, `percentage` and `direction`
+server-side. A value + comparison is **one SQL query** (conditional
+aggregation), not two.
+
+## Datasets & formulas
+
+```php
+$result = Metrics::query(Order::class)
+    ->range('30d')
+    ->dataset('revenue', fn ($d) => $d->sum('total'))
+    ->dataset('refunds', fn ($d) => $d->sum('refund_total'))
+    ->dataset('expenses', fn ($d) => $d->sum('amount')->from(Expense::class))
+    ->formula('profit', '[revenue] - [refunds] - [expenses]')
+    ->formula('margin', 'profit / revenue * 100')
+    ->value();
+
+$result->value('margin'); // 37.5
+```
+
+Formulas are parsed by a small, safe arithmetic evaluator (no `eval`, no SQL).
+They work across all three metric shapes — per value, per trend point, per
+partition group — and comparisons flow through them. Division by zero and
+null operands yield `null` ("no data"), never an exception.
+
+## Named metrics (the API story)
+
+```php
+class OrdersRevenue extends Metric
+{
+    public function query(): MetricBuilder
+    {
+        return Metrics::query(Order::class)
+            ->sum('total')->range('30d')->compareWithPrevious()->cache(300);
+    }
+}
+
+Metrics::register(OrdersRevenue::class);
+
+// e.g. in a controller:
+Route::get('/api/metrics/{key}', function (string $key, Request $request) {
+    return Metrics::run($key, $request->only(['range', 'interval', 'timezone', 'compare']));
+});
+```
+
+The package deliberately ships **no routes** — one line of your routing
+exposes every registered metric, under your auth, your throttling, your
+versioning.
+
+## Caching
+
+```php
+->cache(600)      // seconds; any Laravel TTL value works
+->fresh()         // bypass for one execution
+```
+
+Keys are hashed from the compiled SQL + bindings of every dataset plus the
+resolved period/interval/timezone/formulas — changing anything about a
+metric's definition is automatically a cache miss. Only plain arrays are
+cached, never objects or closures. Store and global TTL are configurable in
+`config/metrics.php`.
+
+## Output
+
+Every result serializes to the same normalized shape:
+
+```json
+{
+    "key": "orders.revenue",
+    "type": "trend",
+    "range": {"key": "7d", "start": "2026-07-03T12:00:00+00:00", "end": "2026-07-10T12:00:00+00:00", "timezone": "UTC"},
+    "interval": "day",
+    "datasets": [
+        {
+            "name": "default",
+            "points": [{"key": "2026-07-09", "label": "Jul 9, 2026", "start": "2026-07-09T00:00:00+00:00", "value": 30}],
+            "total": 30,
+            "formula": false,
+            "comparison": {"strategy": "previous_period", "previous": 40, "difference": -10, "percentage": -25, "direction": "down"}
+        }
+    ],
+    "meta": {},
+    "generated_at": "2026-07-10T12:00:00+00:00",
+    "from_cache": false
+}
+```
+
+## Extending everything
+
+```php
+use Syriable\Metrics\Aggregates\CallbackAggregate;
+use Syriable\Metrics\Ranges\CallbackRange;
+use Syriable\Metrics\Comparisons\CallbackComparison;
+
+// A new aggregation — no core changes:
+Metrics::registerAggregate(new CallbackAggregate(
+    'stddev', fn (string $inner) => "stddev({$inner})",
+));
+
+// A fiscal-year range:
+Metrics::registerRange(new CallbackRange('fiscal_ytd', 'Fiscal YTD',
+    fn (CarbonImmutable $now) => new Period($now->setMonth(4)->startOfMonth(), $now),
+));
+
+// A custom reference window:
+Metrics::registerComparison(new CallbackComparison('vs_launch',
+    fn (Period $current) => Period::between('2026-01-01', '2026-01-31'),
+));
+
+// A new database driver — one class:
+Metrics::registerDialect(new FirebirdDialect);
+
+// Your own payload shape / expression language:
+Metrics::useSerializer(new JsonApiSerializer);
+Metrics::useFormulaEvaluator(new SymfonyExpressionEvaluator);
+```
+
+## Performance notes
+
+- Aggregation is always database-side; result rows are never hydrated into
+  models (queries run through the base query builder).
+- Value + comparison = 1 query. Trend = 1 grouped query per dataset.
+  Partition = 1 grouped query per dataset.
+- Range filtering stays on the raw indexed column (`whereBetween`); only the
+  bucket key is computed per row.
+- Timelines are generated lazily and capped (`metrics.max_buckets`) so a
+  minute-over-a-year request fails fast instead of exhausting memory.
+- `->withNow($instant)` pins the clock — deterministic tests and backfills
+  without freezing global time.
 
 ## Testing
 
@@ -62,23 +256,11 @@ echo $metrics->echoPhrase('Hello, Syriable!');
 composer test
 ```
 
-## Changelog
+## Documentation
 
-Please see [CHANGELOG](CHANGELOG.md) for more information on what has changed recently.
-
-## Contributing
-
-Please see [CONTRIBUTING](CONTRIBUTING.md) for details.
-
-## Security Vulnerabilities
-
-Please review [our security policy](../../security/policy) on how to report security vulnerabilities.
-
-## Credits
-
-- [syriable](https://github.com/syriable)
-- [All Contributors](../../contributors)
+- [Architecture overview](docs/architecture.md)
+- [Architecture decision records](docs/decisions)
 
 ## License
 
-The MIT License (MIT). Please see [License File](LICENSE.md) for more information.
+MIT — see [LICENSE.md](LICENSE.md).
