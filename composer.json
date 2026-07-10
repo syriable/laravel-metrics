@@ -1,10 +1,15 @@
 {
     "name": "syriable/laravel-metrics",
-    "description": "This is my package laravel-metrics",
+    "description": "A modern, extensible, API-first analytics/metrics engine for Laravel \u2014 values, trends, partitions, comparisons, formulas and multi-dataset metrics computed database-side.",
     "keywords": [
         "syriable",
         "laravel",
-        "laravel-metrics"
+        "laravel-metrics",
+        "metrics",
+        "analytics",
+        "kpi",
+        "trends",
+        "aggregation"
     ],
     "homepage": "https://github.com/syriable/laravel-metrics",
     "license": "MIT",
@@ -35,8 +40,7 @@
     },
     "autoload": {
         "psr-4": {
-            "Syriable\\Metrics\\": "src/",
-            "Syriable\\Metrics\\Database\\Factories\\": "database/factories/"
+            "Syriable\\Metrics\\": "src/"
         }
     },
     "autoload-dev": {
@@ -58,7 +62,8 @@
         "allow-plugins": {
             "pestphp/pest-plugin": true,
             "phpstan/extension-installer": true
-        }
+        },
+        "preferred-install": "source"
     },
     "extra": {
         "laravel": {

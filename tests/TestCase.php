@@ -1,8 +1,11 @@
 <?php
 
+declare(strict_types=1);
+
 namespace Syriable\Metrics\Tests;
 
-use Illuminate\Database\Eloquent\Factories\Factory;
+use Illuminate\Database\Schema\Blueprint;
+use Illuminate\Support\Facades\Schema;
 use Orchestra\Testbench\TestCase as Orchestra;
 use Syriable\Metrics\MetricsServiceProvider;
 
@@ -12,9 +15,7 @@ class TestCase extends Orchestra
     {
         parent::setUp();
 
-        Factory::guessFactoryNamesUsing(
-            fn (string $modelName) => 'Syriable\\Metrics\\Database\\Factories\\'.class_basename($modelName).'Factory'
-        );
+        $this->createTables();
     }
 
     protected function getPackageProviders($app)
@@ -27,11 +28,29 @@ class TestCase extends Orchestra
     public function getEnvironmentSetUp($app)
     {
         config()->set('database.default', 'testing');
+        config()->set('database.connections.testing', [
+            'driver' => 'sqlite',
+            'database' => ':memory:',
+            'prefix' => '',
+        ]);
+        config()->set('app.timezone', 'UTC');
+    }
 
-        /*
-         foreach (\Illuminate\Support\Facades\File::allFiles(__DIR__ . '/../database/migrations') as $migration) {
-            (include $migration->getRealPath())->up();
-         }
-         */
+    protected function createTables(): void
+    {
+        Schema::create('orders', static function (Blueprint $table): void {
+            $table->id();
+            $table->string('status')->default('paid');
+            $table->unsignedInteger('customer_id')->default(1);
+            $table->decimal('total', 10, 2)->default(0);
+            $table->decimal('refund_total', 10, 2)->default(0);
+            $table->timestamps();
+        });
+
+        Schema::create('expenses', static function (Blueprint $table): void {
+            $table->id();
+            $table->decimal('amount', 10, 2)->default(0);
+            $table->timestamps();
+        });
     }
 }
