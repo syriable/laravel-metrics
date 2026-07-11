@@ -169,6 +169,49 @@ The package deliberately ships **no routes** — one line of your routing
 exposes every registered metric, under your auth, your throttling, your
 versioning.
 
+## Generating metrics
+
+```bash
+php artisan make:metric Revenue
+```
+
+Scaffolds a new class in the configured metrics namespace (`App\Metrics` /
+`app/Metrics` by default) from a publishable stub — the same experience as
+`make:model` or `make:notification`:
+
+```
+INFO  Metric [app/Metrics/Revenue.php] created successfully.
+```
+
+Nested names respect PSR-4, just like every first-party generator:
+
+```bash
+php artisan make:metric Sales/Revenue   # App\Metrics\Sales\Revenue
+```
+
+`--force` overwrites an existing class; without it, `make:metric` refuses to
+clobber your work. Everything else is configurable in `config/metrics.php`:
+
+```php
+'generator' => [
+    'namespace' => 'App\\Metrics',   // the namespace generated classes declare
+    'path' => app_path('Metrics'),  // where they're written
+    'stub' => null,                 // an absolute path to fully override the stub
+    'base_class' => Metric::class,  // the class generated metrics extend
+],
+```
+
+Publish the stub to customize it in place — no config change required:
+
+```bash
+php artisan vendor:publish --tag="laravel-metrics-stubs"
+```
+
+Metric shapes are an open vocabulary, not a hardcoded switch: `make:metric`
+discovers its `--{option}` flags from a blueprint registry, so a future
+`--trend`/`--value`/`--partition` scaffold is registering a
+`MetricBlueprint`, never editing the command.
+
 ## Caching
 
 ```php
