@@ -10,6 +10,7 @@ use Spatie\LaravelPackageTools\Package;
 use Spatie\LaravelPackageTools\PackageServiceProvider;
 use Syriable\Metrics\Console\Commands\MetricMakeCommand;
 use Syriable\Metrics\Console\Generators\BlueprintRegistry;
+use Syriable\Metrics\Discovery\MetricDiscoverer;
 
 class MetricsServiceProvider extends PackageServiceProvider
 {
@@ -35,12 +36,23 @@ class MetricsServiceProvider extends PackageServiceProvider
 
     public function packageBooted(): void
     {
-        if (! $this->app->runningInConsole()) {
-            return;
+        if ($this->app->runningInConsole()) {
+            $this->publishes([
+                dirname(__DIR__).'/stubs' => base_path('stubs/metrics'),
+            ], 'laravel-metrics-stubs');
         }
 
-        $this->publishes([
-            dirname(__DIR__).'/stubs' => base_path('stubs/metrics'),
-        ], 'laravel-metrics-stubs');
+        if ((bool) $this->app['config']->get('metrics.discover', true)) {
+            $this->registerDiscoveredMetrics();
+        }
+    }
+
+    private function registerDiscoveredMetrics(): void
+    {
+        $metrics = $this->app->make(MetricDiscoverer::class)->discover();
+
+        if ($metrics !== []) {
+            $this->app->make(Metrics::class)->register(...$metrics);
+        }
     }
 }
