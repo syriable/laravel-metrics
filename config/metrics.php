@@ -91,4 +91,14 @@ return [
         'base_class' => Metric::class,
     ],
 
+    /*
+    |--------------------------------------------------------------------------
+    | Automatic discovery
+    |--------------------------------------------------------------------------
+    | When true, every concrete Metric subclass found under the generator's
+    | configured namespace/path is registered automatically at boot — no
+    | manual Metrics::register() call needed for metrics living there.
+    */
+    'discover' => true,
+
 ];

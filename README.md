@@ -157,12 +157,20 @@ class OrdersRevenue extends Metric
     }
 }
 
-Metrics::register(OrdersRevenue::class);
-
 // e.g. in a controller:
 Route::get('/api/metrics/{key}', function (string $key, Request $request) {
     return Metrics::run($key, $request->only(['range', 'interval', 'timezone', 'compare']));
 });
+```
+
+No `Metrics::register()` call needed — any `Metric` subclass living under
+the configured namespace/path (`App\Metrics` / `app/Metrics` by default,
+whether hand-written or generated with `make:metric`) is discovered and
+registered automatically at boot. Register manually only for metrics that
+live elsewhere — a package, a different directory:
+
+```php
+Metrics::register(SomeOtherPackage\Metrics\Signups::class);
 ```
 
 The package deliberately ships **no routes** — one line of your routing
@@ -207,10 +215,35 @@ Publish the stub to customize it in place — no config change required:
 php artisan vendor:publish --tag="laravel-metrics-stubs"
 ```
 
+Every metric generated this way is registered automatically — see
+[Automatic discovery](#automatic-discovery). Set `metrics.discover` to
+`false` if you'd rather register everything by hand.
+
 Metric shapes are an open vocabulary, not a hardcoded switch: `make:metric`
 discovers its `--{option}` flags from a blueprint registry, so a future
 `--trend`/`--value`/`--partition` scaffold is registering a
 `MetricBlueprint`, never editing the command.
+
+## Automatic discovery
+
+Every concrete `Metric` subclass under the configured namespace/path is
+found and registered at boot — the same file-path-to-class discovery
+Laravel uses for console commands in `app/Console/Commands`. No manifest,
+no cache, no `Metrics::register()` call:
+
+```php
+// app/Metrics/Revenue.php — written by hand or by `make:metric` —
+// is registered automatically. Just run it:
+Metrics::run('revenue');
+```
+
+Turn it off in `config/metrics.php` if you'd rather register everything
+explicitly (or have a very large metrics directory and want to avoid the
+boot-time scan):
+
+```php
+'discover' => false,
+```
 
 ## Caching
 
