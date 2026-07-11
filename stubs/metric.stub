@@ -1,0 +1,36 @@
+<?php
+
+declare(strict_types=1);
+
+namespace {{ namespace }};
+
+use Syriable\Metrics\Builder\MetricBuilder;
+use Syriable\Metrics\Facades\Metrics;
+
+/**
+ * {{ class }}
+ *
+ * TODO: describe what this metric measures.
+ *
+ * Register it once it's ready (typically in a service provider's boot
+ * method), then run it by key or straight from the instance:
+ *
+ *     Metrics::register({{ class }}::class);
+ *     Metrics::run((new {{ class }})->key());
+ *     (new {{ class }})->run();
+ */
+class {{ class }} extends \{{ namespacedBaseClass }}
+{
+    /**
+     * Describe the metric: its source, aggregation, range, and (optionally)
+     * a comparison. Replace the model, aggregate and range below with your
+     * own — this is a working example, not a placeholder.
+     */
+    public function query(): MetricBuilder
+    {
+        return Metrics::query(\App\Models\User::class)
+            ->count()
+            ->range('30d')
+            ->compareWithPrevious();
+    }
+}

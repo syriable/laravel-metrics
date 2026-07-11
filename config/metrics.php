@@ -1,5 +1,7 @@
 <?php
 
+use Syriable\Metrics\Metric;
+
 return [
 
     /*
@@ -64,6 +66,29 @@ return [
         'store' => null,
         'prefix' => 'metrics',
         'ttl' => null,
+    ],
+
+    /*
+    |--------------------------------------------------------------------------
+    | Metric generator
+    |--------------------------------------------------------------------------
+    | Controls `php artisan make:metric`.
+    |
+    | - namespace  the namespace generated classes declare.
+    | - path       the directory generated classes are written to.
+    | - stub       an absolute path to a custom stub, or null to use the
+    |              published stub (see below) or the package default.
+    | - base_class the class generated metrics extend.
+    |
+    | Publish the stub with:
+    |   php artisan vendor:publish --tag="laravel-metrics-stubs"
+    | and it is picked up automatically — no config change required.
+    */
+    'generator' => [
+        'namespace' => 'App\\Metrics',
+        'path' => app_path('Metrics'),
+        'stub' => null,
+        'base_class' => Metric::class,
     ],
 
 ];

@@ -8,6 +8,8 @@ use Illuminate\Contracts\Cache\Factory as CacheFactory;
 use Illuminate\Contracts\Foundation\Application;
 use Spatie\LaravelPackageTools\Package;
 use Spatie\LaravelPackageTools\PackageServiceProvider;
+use Syriable\Metrics\Console\Commands\MetricMakeCommand;
+use Syriable\Metrics\Console\Generators\BlueprintRegistry;
 
 class MetricsServiceProvider extends PackageServiceProvider
 {
@@ -15,7 +17,8 @@ class MetricsServiceProvider extends PackageServiceProvider
     {
         $package
             ->name('laravel-metrics')
-            ->hasConfigFile();
+            ->hasConfigFile()
+            ->hasCommand(MetricMakeCommand::class);
     }
 
     public function packageRegistered(): void
@@ -26,5 +29,18 @@ class MetricsServiceProvider extends PackageServiceProvider
                 (array) $app['config']->get('metrics', []),
             );
         });
+
+        $this->app->singleton(BlueprintRegistry::class);
+    }
+
+    public function packageBooted(): void
+    {
+        if (! $this->app->runningInConsole()) {
+            return;
+        }
+
+        $this->publishes([
+            dirname(__DIR__).'/stubs' => base_path('stubs/metrics'),
+        ], 'laravel-metrics-stubs');
     }
 }
