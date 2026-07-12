@@ -2,6 +2,7 @@
 
 declare(strict_types=1);
 
+use Carbon\CarbonImmutable;
 use Illuminate\Support\Facades\DB;
 use Syriable\Metrics\Facades\Metrics;
 use Syriable\Metrics\Tests\Fixtures\Order;
@@ -61,4 +62,15 @@ it('caches everything when a global TTL is configured', function (): void {
 
     expect($plain()->fromCache)->toBeFalse()
         ->and($plain()->fromCache)->toBeTrue();
+});
+
+it('preserves generated_at across cache hits', function (): void {
+    order('2026-07-05 10:00:00');
+
+    $first = cachedCountMetric()->value();
+    $second = cachedCountMetric()->value();
+
+    expect($second->fromCache)->toBeTrue()
+        ->and($second->generatedAt->equalTo($first->generatedAt))->toBeTrue()
+        ->and($second->generatedAt->toIso8601String())->toBe(CarbonImmutable::parse(CACHE_NOW)->toIso8601String());
 });

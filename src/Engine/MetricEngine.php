@@ -86,13 +86,13 @@ final readonly class MetricEngine
             $now, $timezone, $storageTimezone, $precision, $roundingMode,
         );
 
-        [$fromCache, $payload] = $this->throughCache(
-            $builder, $type, $period, $reference, $interval, $timezone, $precision, $compute,
+        [$fromCache, $payload, $generatedAt] = $this->throughCache(
+            $builder, $type, $period, $reference, $interval, $timezone, $precision, $compute, $now,
         );
 
         return $this->assemble(
             $builder, $type, $rangeKey, $period, $interval, $timezone,
-            $strategy, $reference, $payload, $now, $fromCache, $precision, $roundingMode,
+            $strategy, $reference, $payload, $generatedAt, $fromCache, $precision, $roundingMode,
         );
     }
 
@@ -419,7 +419,7 @@ final readonly class MetricEngine
 
     /**
      * @param  Closure(): array<string, array<string, mixed>>  $compute
-     * @return array{0: bool, 1: array<string, array<string, mixed>>}
+     * @return array{0: bool, 1: array<string, array<string, mixed>>, 2: CarbonImmutable}
      */
     private function throughCache(
         MetricBuilder $builder,
@@ -430,16 +430,17 @@ final readonly class MetricEngine
         string $timezone,
         int $precision,
         Closure $compute,
+        CarbonImmutable $now,
     ): array {
         $ttl = $builder->cacheTtl() ?? $this->manager->config('cache.ttl');
 
         if ($ttl === null || $builder->isFresh()) {
-            return [false, $compute()];
+            return [false, $compute(), $now];
         }
 
         return $this->cache->remember($this->cacheKey(
             $builder, $type, $period, $reference, $interval, $timezone, $precision,
-        ), $ttl, $compute);
+        ), $ttl, $compute, $now);
     }
 
     /**
@@ -497,7 +498,7 @@ final readonly class MetricEngine
         ?ComparisonStrategy $strategy,
         ?Period $reference,
         array $payload,
-        CarbonImmutable $now,
+        CarbonImmutable $generatedAt,
         bool $fromCache,
         int $precision,
         int $roundingMode,
@@ -547,7 +548,7 @@ final readonly class MetricEngine
             interval: $interval,
             timezone: $timezone,
             datasets: $datasets,
-            generatedAt: $now,
+            generatedAt: $generatedAt,
             fromCache: $fromCache,
             meta: $builder->metaData(),
             serializer: $this->manager->serializer(),

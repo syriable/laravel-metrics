@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace Syriable\Metrics\Engine;
 
+use Carbon\CarbonImmutable;
 use Closure;
 use DateInterval;
 use DateTimeInterface;
@@ -40,23 +41,34 @@ final readonly class CacheEngine
 
     /**
      * @param  Closure(): array<string, mixed>  $compute
-     * @return array{0: bool, 1: array<string, mixed>} [cache hit, payload]
+     * @return array{0: bool, 1: array<string, mixed>, 2: CarbonImmutable} [cache hit, payload, generated at]
      */
-    public function remember(string $key, DateInterval|DateTimeInterface|int $ttl, Closure $compute): array
-    {
+    public function remember(
+        string $key,
+        DateInterval|DateTimeInterface|int $ttl,
+        Closure $compute,
+        CarbonImmutable $now,
+    ): array {
         $store = $this->store();
 
         $cached = $store->get($key);
 
+        if (is_array($cached) && isset($cached['payload'], $cached['generated_at'])) {
+            return [true, $cached['payload'], CarbonImmutable::parse($cached['generated_at'])];
+        }
+
         if (is_array($cached)) {
-            return [true, $cached];
+            return [true, $cached, $now];
         }
 
         $payload = $compute();
 
-        $store->put($key, $payload, $ttl);
+        $store->put($key, [
+            'payload' => $payload,
+            'generated_at' => $now->toIso8601String(),
+        ], $ttl);
 
-        return [false, $payload];
+        return [false, $payload, $now];
     }
 
     public function forget(string $key): bool
