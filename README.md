@@ -21,7 +21,7 @@ No charts. No Blade. No Livewire. No widgets. Just an engine.
 ## Requirements
 
 - PHP 8.4+
-- Laravel 11 / 12
+- Laravel 11 / 12 / 13
 - MySQL, MariaDB, PostgreSQL, SQLite or SQL Server
 
 ## Installation
@@ -76,6 +76,7 @@ $partition = Metrics::query(Order::class)
 | **Formula** | a computed dataset evaluated over the others, server-side |
 | **Range** | a named resolver ("mtd", "30d") producing an immutable `Period` |
 | **Comparison** | a strategy picking the reference window + uniform math (Δ, %, direction) |
+| **Metric** | a reusable, named definition — a class extending `Metric`, scaffolded with `make:metric` and run by key |
 
 ## Ranges
 
