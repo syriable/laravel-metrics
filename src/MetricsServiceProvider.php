@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace Syriable\Metrics;
 
 use Illuminate\Contracts\Cache\Factory as CacheFactory;
+use Illuminate\Contracts\Config\Repository;
 use Illuminate\Contracts\Foundation\Application;
 use Spatie\LaravelPackageTools\Package;
 use Spatie\LaravelPackageTools\PackageServiceProvider;
@@ -27,7 +28,7 @@ class MetricsServiceProvider extends PackageServiceProvider
         $this->app->singleton(Metrics::class, static function (Application $app): Metrics {
             return new Metrics(
                 $app->make(CacheFactory::class),
-                (array) $app['config']->get('metrics', []),
+                (array) $app->make(Repository::class)->get('metrics', []),
             );
         });
 
@@ -42,7 +43,7 @@ class MetricsServiceProvider extends PackageServiceProvider
             ], 'laravel-metrics-stubs');
         }
 
-        if ((bool) $this->app['config']->get('metrics.discover', true)) {
+        if ((bool) $this->app->make(Repository::class)->get('metrics.discover', true)) {
             $this->registerDiscoveredMetrics();
         }
     }
