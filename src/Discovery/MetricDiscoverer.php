@@ -42,7 +42,7 @@ final readonly class MetricDiscoverer
 
         foreach ((new Finder)->in($path)->files()->name('*.php')->sortByName() as $file) {
             $pathname = str_replace('\\', '/', $file->getPathname());
-            $relative = Str::after($pathname, $root.'/');
+            $relative = (string) Str::after($pathname, $root.'/');
             $class = $namespace.'\\'.str_replace(
                 ['/', '.php'],
                 ['\\', ''],
