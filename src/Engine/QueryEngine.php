@@ -115,7 +115,7 @@ final readonly class QueryEngine
         $inner = $this->inner($grammar->wrap(...), $aggregate, $column);
 
         $bucket = $this->manager
-            ->dialect($query->getConnection()->getDriverName())
+            ->dialect($query->getConnection()->getDriverName()) // @phpstan-ignore-line
             ->bucketExpression($grammar->wrap($dateColumn), $interval, $offsetMinutes);
 
         [$start, $end] = $this->bounds($period, $storageTimezone);

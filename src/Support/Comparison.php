@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace Syriable\Metrics\Support;
 
+use RoundingMode;
 use Syriable\Metrics\Enums\Direction;
 
 /**
@@ -26,7 +27,7 @@ final readonly class Comparison
         public ?float $current,
         public ?float $previous,
         int $precision = 2,
-        int $roundingMode = PHP_ROUND_HALF_UP,
+        int|RoundingMode $roundingMode = PHP_ROUND_HALF_UP,
     ) {
         if ($current === null || $previous === null) {
             $this->difference = null;
