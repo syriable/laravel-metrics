@@ -37,10 +37,11 @@ final readonly class MetricDiscoverer
         $metrics = [];
 
         foreach ((new Finder)->in($path)->files()->name('*.php')->sortByName() as $file) {
+            $relative = str_replace(DIRECTORY_SEPARATOR, '/', Str::after($file->getPathname(), $root.DIRECTORY_SEPARATOR));
             $class = $namespace.'\\'.str_replace(
                 ['/', '.php'],
                 ['\\', ''],
-                Str::after($file->getPathname(), $root.DIRECTORY_SEPARATOR),
+                $relative,
             );
 
             if (! class_exists($class)) {
