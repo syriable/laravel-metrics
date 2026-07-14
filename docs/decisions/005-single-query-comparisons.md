@@ -4,9 +4,10 @@
 Accepted.
 
 ## Context
-Nova computes value metrics with two aggregate queries (current window,
-previous window) — two scans over the same index on large tables, twice the
-round-trip latency, and a consistency window between the two reads.
+Computing compared values with two separate queries means two scans over the
+same index on large tables, twice the round-trip latency, and a consistency
+window between the two reads where data changes could affect comparison
+accuracy.
 
 ## Decision
 When a comparison is requested, `QueryEngine::value()` emits a single
@@ -26,8 +27,8 @@ case … end)` handles distinct counts. This works identically on MySQL,
 MariaDB, PostgreSQL, SQLite and SQL Server.
 
 ## Alternatives considered
-- *Two queries (Nova).* Kept only as the degenerate cases: no comparison,
-  or all-time metrics.
+- *Two separate aggregate queries.* Kept only as degenerate cases: no
+  comparison, or all-time metrics.
 - *`FILTER (WHERE …)` clauses.* Cleaner SQL but PostgreSQL/SQLite only;
   a per-driver split for zero measured benefit over CASE.
 - *UNION ALL of two aggregates.* Same scans as two queries, saved only the

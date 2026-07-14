@@ -4,12 +4,12 @@
 Accepted.
 
 ## Context
-Nova caches whole result objects under keys built from the metric's
-`uriKey` (a slug of its display name — renaming a metric orphans entries)
-plus raw request inputs. Cached objects must survive PHP serialization,
-which forced `SerializableClosure` gymnastics into result classes. There is
-no invalidation API, no store selection, and custom inputs used inside
-`calculate()` silently miss the key.
+Caching result objects with keys based on display names or request slugs
+creates fragility: renaming a metric orphans cache entries, serialization
+requirements couple internal result classes to storage concerns, and custom
+execution inputs used inside metric computations silently miss the cache key
+entirely. There's no portable invalidation strategy and no way to select
+alternate cache stores without affecting all metrics.
 
 ## Decision
 The cache boundary wraps the *computation* (queries, gap-fill, formulas,
@@ -24,8 +24,8 @@ what would be queried is automatically a different key. Two metrics that
 would run identical queries share an entry. Nothing about naming affects
 keys.
 
-TTL semantics are Laravel's (seconds / `DateInterval` / `DateTimeInterface`)
-— explicitly not Nova's surprising "numeric means minutes".
+TTL semantics follow Laravel conventions: seconds, `DateInterval`, or
+`DateTimeInterface` instances — the same as Laravel's own cache store.
 
 ## Alternatives considered
 - *Hash the builder's definition (closures included).* Rejected: closures

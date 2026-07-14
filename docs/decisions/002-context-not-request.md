@@ -4,11 +4,11 @@
 Accepted.
 
 ## Context
-Nova's `calculate(NovaRequest $request)` reads `range`, `timezone`,
-`twelveHourTime` and `filter` from the HTTP request *inside* the
-computation, and helpers require the request as their first argument.
-Running a metric from a job or test means faking requests; the cache key
-must guess which request inputs matter.
+Embedding HTTP request reads inside metric computation creates friction: the
+same metric logic needs different integration paths in controllers, queued
+jobs, CLI commands, and tests. Each path requires adapting or faking the
+request. Cache keys must guess which request details actually matter to the
+computation, and helper functions couple to request structures.
 
 ## Decision
 The builder carries the full execution context — range/period, interval,

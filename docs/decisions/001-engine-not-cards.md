@@ -4,12 +4,11 @@
 Accepted.
 
 ## Context
-Nova's `Value extends RangedMetric extends Metric extends Card extends
-Element`: every metric carries a Vue component name, a card width, an icon,
-help-text tooltips and numbro format strings. Computing "orders this month"
-requires instantiating a dashboard widget. The result classes serialize
-frontend-specific shapes, and percentages/colors are computed during
-`jsonSerialize()`.
+Coupling metrics to presentation creates inflexibility: metrics bound to UI
+vocabularies (component names, colors, widths, number formats) can't adapt
+to different consumers (REST endpoints, GraphQL, CLI, reports). Computing a
+metric becomes entangled with rendering, and result classes must carry
+presentation metadata they often don't need.
 
 ## Decision
 Separate three concerns into three object families that never mix:
@@ -26,9 +25,10 @@ free-form `meta()` bag or a custom serializer.
 
 ## Alternatives considered
 - *Keep a "card" layer as optional sugar.* Rejected: it recreates the
-  coupling this package exists to remove; Nova/Filament adapters belong in
+  coupling this package exists to remove; UI framework adapters belong in
   separate bridge packages.
-- *Result objects with fluent presentation setters (Nova's `->dollars()`).*
+- *Result objects with fluent presentation setters (`->dollars()`,
+  `->percentage()`).*
   Rejected: mutable results make caching and testing harder and drag
   currency/formatting into an engine that shouldn't own it.
 
