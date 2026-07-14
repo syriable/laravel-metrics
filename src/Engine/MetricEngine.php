@@ -7,6 +7,7 @@ namespace Syriable\Metrics\Engine;
 use Carbon\CarbonImmutable;
 use Closure;
 use Illuminate\Database\Eloquent\Builder;
+use RoundingMode;
 use Syriable\Metrics\Builder\DatasetBuilder;
 use Syriable\Metrics\Builder\MetricBuilder;
 use Syriable\Metrics\Contracts\Aggregate;
@@ -111,7 +112,7 @@ final readonly class MetricEngine
         string $timezone,
         string $storageTimezone,
         int $precision,
-        int $roundingMode,
+        int|RoundingMode $roundingMode,
     ): array {
         $round = $this->rounder($precision, $roundingMode);
         $payload = [];
@@ -501,7 +502,7 @@ final readonly class MetricEngine
         CarbonImmutable $generatedAt,
         bool $fromCache,
         int $precision,
-        int $roundingMode,
+        int|RoundingMode $roundingMode,
     ): MetricResult {
         $datasets = [];
 
@@ -575,7 +576,7 @@ final readonly class MetricEngine
      * @param  list<array{key: mixed, value: int|float|null}>  $groups
      * @return list<PartitionGroup>
      */
-    private function partitionGroups(array $groups, int|float|null $total, int $precision, int $roundingMode): array
+    private function partitionGroups(array $groups, int|float|null $total, int $precision, int|RoundingMode $roundingMode): array
     {
         $result = [];
 
@@ -644,7 +645,7 @@ final readonly class MetricEngine
     /**
      * @return Closure(int|float|null): (int|float|null)
      */
-    private function rounder(int $precision, int $roundingMode): Closure
+    private function rounder(int $precision, int|RoundingMode $roundingMode): Closure
     {
         return static function (int|float|null $value) use ($precision, $roundingMode): int|float|null {
             if ($value === null) {

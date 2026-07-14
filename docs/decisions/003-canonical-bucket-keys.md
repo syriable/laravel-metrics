@@ -4,12 +4,11 @@
 Accepted.
 
 ## Context
-Nova gap-fills trends by generating localized human labels ("July 9, 2026",
-"March 2026") in PHP, re-parsing SQL bucket strings with
-`Carbon::createFromFormat`, re-formatting them into the same label format,
-and merging on **string equality of translated labels** — silently dropping
-rows whose labels don't match (`reject(fn => ! in_array($key, ...))`).
-Locale, driver quirks and ISO-week edge cases all threaten the join.
+Joining trend data on formatted human labels creates brittleness: locale-
+dependent formats are fragile to parse in reverse, driver-specific SQL
+quirks interfere with reliable round-tripping, and ISO-week edge cases
+across multiple systems create silent mismatches. The join silently drops
+non-matching rows instead of surfacing the inconsistency as a test failure.
 
 ## Decision
 `Interval::key()` defines one canonical, locale-free key format per bucket
@@ -24,8 +23,8 @@ require SQLite ≥ 3.46, so the dialect computes ISO year-week via the
 matches PHP's `isoWeekYear`/`isoWeek`.
 
 ## Alternatives considered
-- *Nova's label-join with better formats.* Rejected: equality of formatted
-  strings as a correctness invariant is the bug, not the format.
+- *Formatted-label joins with better format specs.* Rejected: equality of
+  formatted strings as a correctness invariant is the bug, not the format.
 - *Joining on epoch timestamps of bucket starts.* Rejected: requires the
   database to compute timestamps of truncated dates portably, which is
   harder across five drivers than emitting a fixed string format.

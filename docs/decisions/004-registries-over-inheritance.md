@@ -4,11 +4,11 @@
 Accepted.
 
 ## Context
-Nova's vocabularies are closed: aggregates are five hard-coded strings
-dispatched by method name (25 hand-written helpers on `Trend` alone),
-ranges are a switch statement, comparisons don't exist as a concept, and
-only the trend date expression factory is extensible (via `Macroable`).
-Adding "distinct count" means editing four metric classes.
+Closed vocabularies force every new capability to be baked into the core:
+hardcoded strings dispatched by method name, switch statements for ranges,
+missing concepts entirely, and extensibility limited to one or two seams.
+Adding a new aggregate, range, or comparison strategy means editing multiple
+core classes, risking regressions and coupling new features to core code.
 
 ## Decision
 Every vocabulary is a small interface plus a runtime registry on the
@@ -38,6 +38,4 @@ is its own first extension consumer, which keeps the seams honest.
   exact property we're avoiding.
 
 ## Consequences
-The 25-helper matrix collapses into `->aggregate($key, $column)` plus a
-handful of readable shorthands. Unknown keys fail with typed exceptions
-that name the registration method. A sixth database is one class.
+What would otherwise be hardcoded method dispatch becomes a single `->aggregate($key, $column)` call plus readable shorthands. Unknown keys fail with typed exceptions that name the registration method. A new database driver is one dialect class, not edits across multiple core files.

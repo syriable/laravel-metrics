@@ -3,20 +3,12 @@
 A standalone, backend-only metrics engine for Laravel. It computes **values,
 trends, partitions, comparisons, multi-dataset metrics and formulas** — all
 aggregated database-side — and returns normalized, serializer-friendly
-structures ready for any consumer: REST, GraphQL, Nova, Filament, Vue, React,
+structures ready for any consumer: REST, GraphQL, Filament, Vue, React,
 Flutter, CLI.
 
 No charts. No Blade. No Livewire. No widgets. Just an engine.
 
-> **Origin.** This package is the product of a full reverse engineering of
-> Laravel Nova's Metrics subsystem (the analysis lives in the companion
-> repository under `docs/metrics-analysis/`). Nova's query *strategies* were
-> kept — DB-side aggregation, driver-specific date bucketing, zero-filled
-> series, elapsed-portion comparisons — while its object *architecture*
-> (metrics as UI cards, request-coupled execution, closed vocabularies) was
-> deliberately inverted. See [docs/architecture.md](docs/architecture.md) and
-> the [ADRs](docs/decisions) for every decision and the alternatives
-> considered.
+This package separates metrics computation from presentation. Define metrics as pure, reusable components that work everywhere — in API endpoints, queued reports, tests, and CLI commands — without coupling to HTTP requests, UI frameworks, or presentation concerns. The engine's architecture is guided by explicit design decisions documented in [ADRs](docs/decisions); see [docs/architecture.md](docs/architecture.md) for the full picture.
 
 ## Requirements
 

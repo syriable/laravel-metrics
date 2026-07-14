@@ -111,12 +111,11 @@ Three explicit timezones, each with one job:
   binding.
 - **bucket shifting**: the dialect receives `displayOffset − storageOffset`
   in **minutes** (half-hour and 45-minute zones work), evaluated at
-  execution time. Known limitation, inherited knowingly from Nova and
-  documented: the offset is constant across the queried range, so a range
-  spanning a DST transition mis-buckets rows near the boundary by one hour.
-  Fixing it properly requires session/native tz conversion per driver
-  (`CONVERT_TZ`, `AT TIME ZONE`) — the dialect seam is where that lands
-  without touching anything else.
+  execution time. Known limitation: the offset is constant across the
+  queried range, so a range spanning a DST transition mis-buckets rows near
+  the boundary by one hour. Fixing it properly requires session/native tz
+  conversion per driver (`CONVERT_TZ`, `AT TIME ZONE`) — the dialect seam
+  is where that lands without touching anything else.
 
 ## Security posture
 

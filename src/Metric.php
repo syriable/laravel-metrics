@@ -26,8 +26,8 @@ use Syriable\Metrics\Results\MetricResult;
  *     Metrics::register(OrdersRevenue::class);
  *     Metrics::run('orders_revenue', ['range' => 'mtd']);
  *
- * Unlike Nova metrics, this class knows nothing about HTTP, cards, or
- * components — it is a pure definition.
+ * This class is a pure metric definition: no HTTP, no UI, no presentation
+ * concerns. It describes what to compute, not how to display it.
  */
 abstract class Metric
 {

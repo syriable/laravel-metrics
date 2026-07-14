@@ -4,14 +4,13 @@
 Accepted.
 
 ## Context
-The initial `Metrics::register()` API required every named metric to be
-wired up by hand, typically in a service provider's `boot()` method. That's
-one more manual step per metric, easy to forget, and it's exactly the kind
-of bookkeeping Nova doesn't ask for — Nova auto-discovers every resource
-under `app/Nova`. Laravel itself follows the same convention-over-registration
-pattern for console commands: `Illuminate\Foundation\Console\Kernel::load()`
-maps every file under `app/Console/Commands` to a class name and registers
-it, with no manifest and no explicit opt-in per command.
+Manual registration requires every named metric to be wired up by hand in a
+service provider's `boot()` method — one more easy-to-forget step per metric.
+Laravel convention-over-configuration is established precedent: console
+commands in `app/Console/Commands` are discovered automatically via
+`Illuminate\Foundation\Console\Kernel::load()`, which maps files to class
+names and registers them without a manifest or explicit opt-in per command.
+Metrics should follow the same familiar pattern.
 
 ## Decision
 `MetricDiscoverer` walks the generator's configured namespace/path (the
@@ -25,7 +24,7 @@ routes or events at application scale), matching Kernel::load()'s own
 no-cache precedent for command discovery.
 
 A single `metrics.discover` boolean (default `true`) is the only new
-surface: on for the zero-config Nova-like experience, off for apps that
+surface: on for zero-config convention-over-configuration, off for apps that
 want explicit control or have reasons to avoid the boot-time scan.
 `Metrics::register()` still exists and still works, unchanged — discovery
 only covers the configured directory; metrics defined elsewhere (a
@@ -33,8 +32,9 @@ package, a different namespace) are registered the way they always were.
 
 ## Alternatives considered
 - *Require explicit `Metrics::register()` always.* The status quo before
-  this ADR; rejected as the one piece of ceremony left that Nova doesn't
-  have, for a package whose stated goal is matching Nova's generator DX.
+  this ADR; rejected because it introduces boilerplate that Laravel's own
+  patterns (console commands, event listeners, migrations) deliberately
+  avoid via convention.
 - *A cached discovery manifest (`bootstrap/cache/metrics.php`), mirroring
   `event:cache`.* Rejected for now: events and routes exist at a scale
   (hundreds, app-wide) where a per-request filesystem scan is measurably

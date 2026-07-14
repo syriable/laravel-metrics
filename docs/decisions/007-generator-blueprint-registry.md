@@ -4,12 +4,12 @@
 Accepted.
 
 ## Context
-Nova's `nova:metric` generator is a single command class that string-matches
-`--trend`/`--value`/`--partition` options inline and branches to a
-hardcoded stub path for each. Adding a new metric shape means editing the
-command itself. This package's own philosophy (ADR-004) already rejects
-that pattern for the runtime engine's vocabularies — the generator should
-not reintroduce it for metric *shapes*.
+A command generator with hardcoded stub paths branching on option strings
+forces every new metric shape to be baked into the command itself. Adding a
+new shape means editing the command, risking bugs and regressions. This
+package's own philosophy (ADR-004) rejects closed vocabularies for the
+runtime engine — the generator should not reintroduce the same pattern for
+metric shapes.
 
 ## Decision
 Generation is split the same way the engine is: small single-responsibility
