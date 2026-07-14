@@ -33,11 +33,12 @@ final readonly class MetricDiscoverer
         }
 
         $namespace = trim((string) $this->config->get('metrics.generator.namespace', 'App\\Metrics'), '\\');
-        $root = realpath($path);
+        $root = str_replace('\\', '/', realpath($path));
         $metrics = [];
 
         foreach ((new Finder)->in($path)->files()->name('*.php')->sortByName() as $file) {
-            $relative = str_replace(DIRECTORY_SEPARATOR, '/', Str::after($file->getPathname(), $root.DIRECTORY_SEPARATOR));
+            $pathname = str_replace('\\', '/', $file->getPathname());
+            $relative = Str::after($pathname, $root.'/');
             $class = $namespace.'\\'.str_replace(
                 ['/', '.php'],
                 ['\\', ''],
